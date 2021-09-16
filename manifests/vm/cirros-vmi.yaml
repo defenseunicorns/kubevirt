@@ -1,0 +1,39 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  annotations:
+    sidecar.istio.io/inject: "true"
+  name: cirros-vmi
+  namespace: istio-vmi
+  labels:
+    app: cirros-vmi
+spec:
+  domain:
+    devices:
+      interfaces:
+        - name: default
+          masquerade: {}
+      disks:
+        - disk:
+            bus: virtio
+          name: containerdisk
+        - disk:
+            bus: virtio
+          name: cloudinitdisk
+    resources:
+      requests:
+        memory: 128M
+  networks:
+    - name: default
+      pod: {}
+  terminationGracePeriodSeconds: 0
+  volumes:
+    - name: containerdisk
+      containerDisk:
+        image: kubevirt/cirros-container-disk-demo:devel
+    - name: cloudinitdisk
+      cloudInitNoCloud:
+        userData: |
+          #!/bin/sh
+          while true ; do curl istio-vmi-svc.default.svc.cluster.local:8080 ; sleep 1 ; done
