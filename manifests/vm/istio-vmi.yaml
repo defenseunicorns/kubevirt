@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+    kubevirt.io: ""
+  name: istio-vmi
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: GitRepository
+metadata:
+  name: credentials-copy
+  namespace: istio-vmi
+spec:
+  interval: 1m0s
+  ref:
+    branch: main
+  url: https://github.com/runyontr/credentials-copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: credentials
+  namespace: istio-vmi
+spec:
+  chart:
+    spec:
+      chart: chart
+      sourceRef:
+        kind: GitRepository
+        name: credentials-copy
+  interval: 1m0s
+  values:
+    source:
+      namespace: istio-system
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  annotations:
+    sidecar.istio.io/inject: "true"
+  labels:
+    app: istio-vmi
+  name: istio-vmi
+  namespace: istio-vmi
+spec:
+  domain:
+    devices:
+      interfaces:
+        - name: default
+          masquerade: {}
+          ports:
+            - port: 8080
+      disks:
+        - disk:
+            bus: virtio
+          name: containerdisk
+        - disk:
+            bus: virtio
+          name: cloudinitdisk
+    resources:
+      requests:
+        memory: 1024M
+  networks:
+    - name: default
+      pod: {}
+  readinessProbe:
+    httpGet:
+      port: 8080
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 3
+  terminationGracePeriodSeconds: 0
+  volumes:
+    - name: containerdisk
+      containerDisk:
+        image: kubevirt/fedora-cloud-container-disk-demo:devel
+    - cloudInitNoCloud:
+        userData: |
+          #cloud-config
+          password: fedora
+          chpasswd: { expire: False }
+          runcmd:
+          - dnf install -y screen nc
+          - while true ; do sh -c "nc -lp 8080 -c  \"echo -e 'HTTP/1.1 200 OK\n\nHello'\" " ; done &
+          - while true ; do curl kubevirt.io >out 2>/dev/null ; sleep 1 ; done &
+      name: cloudinitdisk
