@@ -19,3 +19,37 @@ WARN (Unknown if this platform has IOMMU support)
   QEMU: Checking for secure guest support                                    : WARN (Unknown if this platform has Secure Guest support)
 $ sudo apt install qemu-kvm
 ```
+
+## Install K3s
+
+Disabled Traefik
+
+## Deploy BigBang
+
+## Install Kubevirt
+
+```bash
+kubectl install -f manifests/operator
+```
+
+## VM Setup
+
+```bash
+
+
+dnf install tigervnc
+
+[fedora@tom log]$ cat /etc/tigervnc/vncserver.users
+# TigerVNC User assignment
+#
+# This file assigns users to specific VNC display numbers.
+# The syntax is <display>=<username>. E.g.:
+#
+# :2=andrew
+# :3=lisa
+:2=fedora
+:4=fedora
+
+$ vncpasswd
+$ vncserver :4 -geometry 1280x1040
+```
