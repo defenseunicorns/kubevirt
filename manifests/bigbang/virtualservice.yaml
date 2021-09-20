@@ -16,6 +16,22 @@ spec:
           number: 8080
 ---
 apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: ssh
+  namespace: istio-system
+spec:
+  selector:
+    app: public-ingressgateway
+  servers:
+  - hosts:
+    - 'ssh.bigbang.dev'
+    port:
+      name: tcp-ssh
+      number: 2222
+      protocol: TCP
+---
+apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: cockpit
@@ -35,32 +51,36 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: kubevirt
+  name: ssh
   namespace: kubevirt
 spec:
   gateways:
-  - istio-system/public
+  - istio-system/ssh
   hosts:
   - ssh.bigbang.dev
-  http:
-  - route:
+  tcp:
+  - match:
+    - port: 2222
+    route:
     - destination:
         host: istio-vmi-svc.istio-vmi.svc.cluster.local
         port:
-          number: 22
+          number: 2222
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: kubevirt
+  name: vnc
   namespace: kubevirt
 spec:
   gateways:
-  - istio-system/public
+  - istio-system/vnc
   hosts:
   - vnc.bigbang.dev
-  http:
-  - route:
+  tcp:
+  - match:
+    - port: 5904
+    route:
     - destination:
         host: istio-vmi-svc.istio-vmi.svc.cluster.local
         port:

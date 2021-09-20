@@ -47,7 +47,6 @@ dnf install tigervnc
 #
 # :2=andrew
 # :3=lisa
-:2=fedora
 :4=fedora
 
 $ vncpasswd
@@ -73,8 +72,18 @@ registryCredentials:
   password: <token>
 ```
 
-3. Create the bigbang namespace `kubectl create ns bigbang`
-4. Install flux: `./scripts/install_flux.sh -u <ironbank_user> -p <ironbank_token>`
-5. Install the helm release: `helm upgrade -i bigbang chart -n bigbang -f <local_creds_file> -f <path_to_bigbang-values.yaml>`
-6. ...
-7. Profit?
+3. Install flux: `./scripts/install_flux.sh -u <ironbank_user> -p <ironbank_token>`
+4. Install the helm release: `helm upgrade -i bigbang chart --create-namespace -n bigbang -f <local_creds_file> -f <path_to_bigbang-values.yaml> -f chart/ingress-certs.yaml`
+
+# sandbox
+
+```bash
+kubectl virt create vm tommmy \
+    --boot-disk-access-mode=ReadWriteMany \
+    --boot-disk-size=15G \
+    --boot-disk-storage-class=local-path \
+    --cloud-init-file=clouldinit \
+    --cpu=2 \
+    --image=ubuntu20.04 \
+    --memory=6Gi
+```

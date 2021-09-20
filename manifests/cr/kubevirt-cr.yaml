@@ -8,6 +8,7 @@ spec:
   certificateRotateStrategy: {}
   configuration:
     developerConfiguration:
+      # in a virtualized hypervisor
       useEmulation: true
       featureGates: []
   customizeComponents: {}

@@ -15,8 +15,8 @@ spec:
     name: cockpit
     protocol: TCP
   - port: 5904
-    name: vnc
+    name: tcp-vnc
     protocol: TCP
-  - port: 22
-    name: ssh
+  - port: 2222
+    name: tcp-ssh
     protocol: TCP

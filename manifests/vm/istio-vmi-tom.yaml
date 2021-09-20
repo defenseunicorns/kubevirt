@@ -23,14 +23,17 @@ spec:
               masquerade: {}
               ports:
                 - port: 8080
-                - port: 22
+                - port: 2222
                 - port: 9090
                 - port: 5904
           disks:
             - disk:
                 bus: virtio
               name: containerdisk
-            - name: emptydisk
+            - name: emptydisk1
+              disk:
+                bus: virtio
+            - name: emptydisk2
               disk:
                 bus: virtio
             - disk:
@@ -45,12 +48,16 @@ spec:
           pod: {}
       volumes:
         # create an extra disk for use in the VM
-        - name: emptydisk
+        - name: emptydisk1
+          emptyDisk:
+            capacity: 20Gi
+        - name: emptydisk2
           emptyDisk:
             capacity: 20Gi
         - name: containerdisk
           containerDisk:
             image: kubevirt/fedora-cloud-container-disk-demo:devel
+            # image: registry.gamewarden.io/ubuntu-bionic:ablan
             # image: jseguillon/kubevirt-images:focal-server-cloudimg-amd64
         - cloudInitNoCloud:
             userData: |
@@ -59,10 +66,25 @@ spec:
               chpasswd: { expire: False }
               ssh_authorized_keys:
               - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCbf6xmUifV/g5Z3A3nplIGFK7O7A7r4Qy/Lro/jYtbvJCSBsH9yppfMiriLOcPZEPWCLQz6FPPu0GKPv/JYQ6INbLox8IB9lgJMj6i9AmXXuMy2DvbjCSmInErKClBcHH8r7ctKVVSE4q6pE+A+oNTyFC6nkyjwUZpBUlZLYut1tW0OJKLUZZvTXsmyLIauhqVXNXDSQF+RGRhK06qD7baXq7S1S2UuVtvsMjBtNBoQutZpE6xmggeJLPA4FgfcQFN/mIRzeWQIfRDpy0YwsYGAyDIj+bqjM0+MDgTguShyh0HLxCiziZp+Beqf2rljj/V6rGU+wlRJqL0B+9wRtR/R51e6xRuX2VZ8gn0hmyPvrmfjDhIbQq67z6yHEZRDyKrUp3sh27Q3dFceB4vCgqkcJtiMzh3UCr7JfjGpwaOEmCngpWrPr1tyqDWE1dyonUb1itix6BIemZKN/RTTq2eoJbpKW+y4lZrznRC2NLpcFf35OEd0PpWlMMmN1Y3zZYkezzJ1Qr0ZE08Ar4PqZBYNmsV4pn/ktdYc06imEfZAIGoIqqhc2tssUsH8k3RO0cQHPVWkM/wnvMfnoSFCCh02sk2340rpX0FMukidAMgTlZC0ABXZYkILfcJpaRF7hZqUlp9R32RD5kcb2vlPEFy644+JFN1UYPCTQ66f9wqxw== runyontr@gmail.com
+              write_files:
+              - path: /etc/tigervnc/vncserver.users
+                content: |
+                  :4=fedora
               runcmd:
-              - dnf install -y screen nc 
+              - dnf install -y policycoreutils-python-utils screen nc
+              - semanage port -a -t ssh_port_t -p tcp 2222
+              - sed -i -e '/^Port/s/^.*$/Port 4444/' /etc/ssh/sshd_config
+              - sed -i -e '/^PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
+              - sed -i -e '$aAllowUsers fedora' /etc/ssh/sshd_config
+              - echo "Port 2222" >> /etc/ssh/sshd_config
+              - systemctl restart sshd
               - while true ; do sh -c "nc -lp 8080 -c  \"echo -e 'HTTP/1.1 200 OK\n\nHello'\" " ; done &
               - while true ; do curl kubevirt.io >out 2>/dev/null ; sleep 1 ; done &
+              # - mkdir /home/fedora/.vnc
+              # - echo "fedora" | vncpasswd -f > /home/fedora/.vnc/passwd
+              # - echo ":4=fedora" >> /etc/tigervnc/vncserver.users
+              # - vncserver :4 -passwd /home/fedora/.vnc/passwd
+
           name: cloudinitdisk
 
 # dnf install tigervnc
